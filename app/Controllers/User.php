@@ -19,7 +19,7 @@ class User extends ResourceController
     public function index()
     {
         $model = new UserModel();
-        $data['users'] = $model->findAll();
+        $data['users'] = $model->orderBy('role')->orderBy('name')->where('username <>', 'admin')->findAll();
         return $this->respond($data);
     }
 
@@ -91,19 +91,23 @@ class User extends ResourceController
     public function update($id = null)
     {
         $model = new UserModel();
-        $dataInput = $this->request->getRawInput();
+        $email = $this->request->getVar('email');
+        $name = $this->request->getVar("name");
+        $role = $this->request->getVar("role");
+        $password = $this->request->getVar("password");
         $currentUser = $model->where('id', $id)->first();
-        $userExist = $model->where('email', $dataInput['email'])->first();
 
-        // pengecekan email yang sudah ada
-        if ($userExist && $currentUser != $userExist) return $this->failResourceExists('Email sudah ada');
+        $editedData = [];
 
-        $editedData = [
-            'email' => $dataInput['email'],
-            'name' => $dataInput['name'],
-            'password' => password_hash($dataInput['password'], PASSWORD_DEFAULT),
-            'role' => $dataInput['role'],
-        ];
+        if (isset($name)) $editedData['name'] = $name;
+        if (isset($email)) {
+            $editedData['email'] = $email;
+            // pengecekan email yang sudah ada
+            $userExist = $model->where('email', $email)->first();
+            if ($userExist && $currentUser != $userExist) return $this->failResourceExists('Email sudah ada');
+        }
+        if (isset($password)) $editedData['password'] = password_hash($password, PASSWORD_DEFAULT);
+        if (isset($role)) $editedData['role'] = $role;
 
 
         try {
@@ -113,7 +117,9 @@ class User extends ResourceController
             }
             return $this->failNotFound('Data user tidak ditemukan.');
         } catch (Exception $e) {
-            return $this->failServerError('Gagal mengupdate data user.');
+            // return exception
+            return $this->fail($e->getMessage());
+            // return $this->failServerError('Gagal mengupdate data user.');
         }
     }
 

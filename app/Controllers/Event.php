@@ -17,11 +17,11 @@ class Event extends ResourceController
     public function index()
     {
         $model = new EventModel();
-        $data['events'] = $model->orderBy('start')->findAll();
+        $data['events'] = $model->orderBy('start',)->findAll();
         return $this->respond($data);
     }
 
-    
+
     /**
      * Return the properties of a resource object
      *
@@ -52,7 +52,7 @@ class Event extends ResourceController
 
         // mengambil data gambar
         $image = $this->request->getFile('image');
-        
+
         // cek apakah file yang diupload adalah gambar
         if ($image) {
             // allowed file image
@@ -104,7 +104,7 @@ class Event extends ResourceController
     {
         // 
     }
-    
+
     /**
      * Add or update a model resource, from "posted" properties
      *
@@ -113,53 +113,60 @@ class Event extends ResourceController
     public function update($id = null)
     {
         $model = new EventModel();
-        $dataInput = $this->request->getJSON();
-        // get input from form-data
-        // $dataInput2 = $this->request->getPost();
-        // $start = new DateTime($dataInput['start']);
-        // $end = new DateTime($dataInput['end']);
-        print_r($dataInput);
+        $start = new DateTime($this->request->getVar('start'));
+        $end = new DateTime($this->request->getVar('end'));
         $now = new DateTime();
 
-        // get input from put method form data
-        
-        // if ($start >= $end || $start <= $now) {
-        //     return $this->failForbidden('Tanggal tidak valid.');
-        // }
+        // ambil data sebelumnya
+        $prevData = $model->where('id', $id)->first();
 
-        // if (empty($dataInput['description'])) {
-        //     $dataInput['description'] = '';
-        // } else {
-        //     $dataInput['description'] = $dataInput['description'];
-        // }
-        
-        // if (empty($dataInput['image_url'])) {
-        //     $imageUrl = 'https://via.placeholder.com/150';  // kalau todak upload gambar, gunakan placeholder
-        // } else {
-        //     $imageUrl = $dataInput['image_url'];
-        // }
+        // mengambil data gambar
+        $image = $this->request->getFile('image');
 
-        // $data = $model->where('id', $id)->first();
+        // cek apakah file yang diupload adalah gambar
+        if ($image) {
+            // allowed file image
+            $allowedFile = ['image/jpeg', 'image/jpg', 'image/png'];
+            if (!in_array($image->getClientMimeType(), $allowedFile)) {
+                return $this->failValidationErrors('File yang diupload bukan gambar');
+            }
+            $imageUrl = $image->getRandomName();
 
-        // if (!$data) {
-        //     return $this->failNotFound('Data event tidak ditemukan.');
-        // }
-        
-        // $updated = $model->where('id', $id)->set([
-        //     'title' => $dataInput['title'],
-        //     'description' => $dataInput['description'],
-        //     'start' => $dataInput['start'],
-        //     'end' => $dataInput['end'],
-        //     'venue' => $dataInput['venue'],
-        //     'price' => $dataInput['price'],
-        //     'organizer' => $dataInput['organizer'],
-        //     'image_url' => $imageUrl,
-        // ])->update();
+            // cari dan hapus gambar sebelumnya
+            if ($prevData['image_url'] != 'default.jpg') {
+                unlink('uploads/images/' . $prevData['image_url']);
+            }
 
-        // if ($updated) {
-        //     return $this->respondUpdated($updated);
-        // }
-        // return $this->failServerError('Gagal mengupdate data event.');
+            $image->move('uploads/images', $imageUrl); // memindah gambar ke folder public
+        } else {
+            $imageUrl = $prevData['image_url'];
+        }
+
+
+        if ($start >= $end || $start <= $now) {
+            return $this->failForbidden('Tanggal tidak valid.');
+        }
+
+        $data = [
+            'title' => $this->request->getVar('title'),
+            'description' => $this->request->getVar('description'),
+            'start' => $this->request->getVar('start'),
+            'end' => $this->request->getVar('end'),
+            'venue' => $this->request->getVar('venue'),
+            'price' => $this->request->getVar('price'),
+            'organizer' => $this->request->getVar('organizer'),
+            'image_url' => $imageUrl,
+        ];
+        $model->where('id', $id)->set($data)->update();
+
+        $response = [
+            'status' => 200,
+            'error' => null,
+            'messages' => [
+                'success' => 'Event berhasil diubah'
+            ]
+        ];
+        return $this->respondUpdated($response);
     }
 
     /**

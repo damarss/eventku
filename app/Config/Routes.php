@@ -44,6 +44,7 @@ $routes->group('auth', ['filter' => 'cors'], function ($routes) {
 
 $routes->group('api/v1', ['filter' => 'cors'], function ($routes) {
     $routes->resource('event', ['filter' => 'auth']);
+    $routes->post('event/(:num)', 'Event::update/$1', ['filter' => 'auth']);
     $routes->get('user', 'User::index', ['filter' => 'adminauth']);
     $routes->get('user/(:num)', 'User::show/$1', ['filter' => 'userauth']);
     $routes->put('user/(:num)', 'User::update/$1', ['filter' => 'auth']);
