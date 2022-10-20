@@ -30,18 +30,18 @@ class UserAuth implements FilterInterface
     {
         $key = getenv('JWT_SECRET');
         $header = $request->getServer('HTTP_AUTHORIZATION');
-        
+
         try {
             $token = explode(' ', $header)[1];
             $decodedToken = JWT::decode($token, new Key($key, 'HS256'));
             $role = $decodedToken->role;
             $id = $decodedToken->uid;
-            $idRequest = $request->uri->getSegment(3);
+            $idRequest = $request->uri->getSegment(4);
             if ($role != 'admin') {
                 if ($idRequest != $id) {
                     return Services::response()
                         ->setStatusCode(ResponseInterface::HTTP_UNAUTHORIZED)
-                        ->setJSON(['msg' => 'Unauthorized',]);
+                        ->setJSON(['msg' => $idRequest,]);
                 }
             }
         } catch (\Exception $e) {

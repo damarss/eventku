@@ -117,9 +117,7 @@ class User extends ResourceController
             }
             return $this->failNotFound('Data user tidak ditemukan.');
         } catch (Exception $e) {
-            // return exception
-            return $this->fail($e->getMessage());
-            // return $this->failServerError('Gagal mengupdate data user.');
+            return $this->failServerError('Gagal mengupdate data user.');
         }
     }
 
